@@ -68,6 +68,7 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 			"--bind", bindArg)
 	}
 
+	fmt.Printf("api: %s, kind: %s\n", h.APIVersion, h.Kind)
 	base := &appsv1beta1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: h.Name,
