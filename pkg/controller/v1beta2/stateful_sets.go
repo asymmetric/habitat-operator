@@ -20,7 +20,7 @@ import (
 	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
 
 	"github.com/go-kit/kit/log/level"
-	appsv1beta1 "k8s.io/api/apps/v1beta1"
+	appsv1beta2 "k8s.io/api/apps/v1beta2"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,7 +29,7 @@ import (
 
 const persistentVolumeName = "persistent"
 
-func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1.StatefulSet, error) {
+func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta2.StatefulSet, error) {
 	// This value needs to be passed as a *int32, so we convert it, assign it to a
 	// variable and afterwards pass a pointer to it.
 	count := int32(h.Spec.Count)
@@ -69,7 +69,7 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 			"--bind", bindArg)
 	}
 
-	base := &appsv1beta1.StatefulSet{
+	base := &appsv1beta2.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: h.Name,
 			OwnerReferences: []metav1.OwnerReference{
@@ -81,14 +81,14 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 				},
 			},
 		},
-		Spec: appsv1beta1.StatefulSetSpec{
+		Spec: appsv1beta2.StatefulSetSpec{
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					habv1beta1.HabitatNameLabel: h.Name,
 				},
 			},
 			Replicas:            &count,
-			PodManagementPolicy: appsv1beta1.ParallelPodManagement,
+			PodManagementPolicy: appsv1beta2.ParallelPodManagement,
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
@@ -134,8 +134,8 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 					},
 				},
 			},
-			UpdateStrategy: appsv1beta1.StatefulSetUpdateStrategy{
-				Type: appsv1beta1.StatefulSetUpdateStrategyType(appsv1beta1.RollingUpdateDeploymentStrategyType),
+			UpdateStrategy: appsv1beta2.StatefulSetUpdateStrategy{
+				Type: appsv1beta2.StatefulSetUpdateStrategyType(appsv1beta2.RollingUpdateDeploymentStrategyType),
 			},
 		},
 	}
@@ -267,7 +267,7 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 }
 
 func (hc *HabitatController) cacheStatefulSets() {
-	hc.stsInformer = hc.config.KubeInformerFactory.Apps().V1beta1().StatefulSets().Informer()
+	hc.stsInformer = hc.config.KubeInformerFactory.Apps().V1beta2().StatefulSets().Informer()
 
 	hc.stsInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    hc.handleStsAdd,
@@ -279,7 +279,7 @@ func (hc *HabitatController) cacheStatefulSets() {
 }
 
 func (hc *HabitatController) handleStsAdd(obj interface{}) {
-	sts, ok := obj.(*appsv1beta1.StatefulSet)
+	sts, ok := obj.(*appsv1beta2.StatefulSet)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert StatefulSet", "obj", obj)
 		return
@@ -295,7 +295,7 @@ func (hc *HabitatController) handleStsAdd(obj interface{}) {
 }
 
 func (hc *HabitatController) handleStsUpdate(oldObj, newObj interface{}) {
-	sts, ok := newObj.(*appsv1beta1.StatefulSet)
+	sts, ok := newObj.(*appsv1beta2.StatefulSet)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert StatefulSet", "obj", newObj)
 		return
@@ -311,7 +311,7 @@ func (hc *HabitatController) handleStsUpdate(oldObj, newObj interface{}) {
 }
 
 func (hc *HabitatController) handleStsDelete(obj interface{}) {
-	sts, ok := obj.(*appsv1beta1.StatefulSet)
+	sts, ok := obj.(*appsv1beta2.StatefulSet)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert StatefulSet", "obj", obj)
 		return
