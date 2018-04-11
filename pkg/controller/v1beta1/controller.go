@@ -25,7 +25,7 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
-	appsv1beta1 "k8s.io/api/apps/v1beta1"
+	appsv1beta2 "k8s.io/api/apps/v1beta2"
 	apiv1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -168,14 +168,14 @@ func (hc *HabitatController) cacheHabitats() {
 
 func (hc *HabitatController) cacheDeployments() {
 	source := newListWatchFromClientWithLabels(
-		hc.config.KubernetesClientset.AppsV1beta1().RESTClient(),
+		hc.config.KubernetesClientset.AppsV1beta2().RESTClient(),
 		"deployments",
 		apiv1.NamespaceAll,
 		labelListOptions())
 
 	hc.deployInformer = cache.NewSharedIndexInformer(
 		source,
-		&appsv1beta1.Deployment{},
+		&appsv1beta2.Deployment{},
 		resyncPeriod,
 		cache.Indexers{},
 	)
@@ -289,7 +289,7 @@ func (hc *HabitatController) handleHabDelete(obj interface{}) {
 }
 
 func (hc *HabitatController) handleDeployAdd(obj interface{}) {
-	d, ok := obj.(*appsv1beta1.Deployment)
+	d, ok := obj.(*appsv1beta2.Deployment)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert Deployment", "obj", obj)
 		return
@@ -310,7 +310,7 @@ func (hc *HabitatController) handleDeployAdd(obj interface{}) {
 }
 
 func (hc *HabitatController) handleDeployUpdate(oldObj, newObj interface{}) {
-	d, ok := newObj.(*appsv1beta1.Deployment)
+	d, ok := newObj.(*appsv1beta2.Deployment)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert deployment", "obj", newObj)
 		return
@@ -331,7 +331,7 @@ func (hc *HabitatController) handleDeployUpdate(oldObj, newObj interface{}) {
 }
 
 func (hc *HabitatController) handleDeployDelete(obj interface{}) {
-	d, ok := obj.(*appsv1beta1.Deployment)
+	d, ok := obj.(*appsv1beta2.Deployment)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert deployment", "obj", obj)
 		return
@@ -600,7 +600,7 @@ func (hc *HabitatController) handleHabitatDeletion(key string) error {
 		return err
 	}
 
-	deploymentsClient := hc.config.KubernetesClientset.AppsV1beta1().Deployments(deploymentNS)
+	deploymentsClient := hc.config.KubernetesClientset.AppsV1beta2().Deployments(deploymentNS)
 
 	// With this policy, dependent resources will be deleted, but we don't wait
 	// for that to happen.
@@ -619,7 +619,7 @@ func (hc *HabitatController) handleHabitatDeletion(key string) error {
 	return nil
 }
 
-func (hc *HabitatController) newDeployment(h *habv1beta1.Habitat) (*appsv1beta1.Deployment, error) {
+func (hc *HabitatController) newDeployment(h *habv1beta1.Habitat) (*appsv1beta2.Deployment, error) {
 	// This value needs to be passed as a *int32, so we convert it, assign it to a
 	// variable and afterwards pass a pointer to it.
 	count := int32(h.Spec.Count)
@@ -659,11 +659,11 @@ func (hc *HabitatController) newDeployment(h *habv1beta1.Habitat) (*appsv1beta1.
 			"--bind", bindArg)
 	}
 
-	base := &appsv1beta1.Deployment{
+	base := &appsv1beta2.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: h.Name,
 		},
-		Spec: appsv1beta1.DeploymentSpec{
+		Spec: appsv1beta2.DeploymentSpec{
 			Replicas: &count,
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
@@ -881,11 +881,11 @@ func (hc *HabitatController) conform(key string) error {
 	}
 
 	// Create Deployment, if it doesn't already exist.
-	if _, err := hc.config.KubernetesClientset.AppsV1beta1().Deployments(h.Namespace).Create(deployment); err != nil {
+	if _, err := hc.config.KubernetesClientset.AppsV1beta2().Deployments(h.Namespace).Create(deployment); err != nil {
 		// Was the error due to the Deployment already existing?
 		if apierrors.IsAlreadyExists(err) {
 			// If yes, update it.
-			if _, err := hc.config.KubernetesClientset.AppsV1beta1().Deployments(h.Namespace).Update(deployment); err != nil {
+			if _, err := hc.config.KubernetesClientset.AppsV1beta2().Deployments(h.Namespace).Update(deployment); err != nil {
 				return err
 			}
 		} else {
